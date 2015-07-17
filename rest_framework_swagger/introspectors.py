@@ -25,6 +25,8 @@ try:
 except ImportError:
     django_filters = None
 
+from rest_framework_swagger import SWAGGER_SETTINGS
+
 
 def get_view_description(view_cls, html=False, docstring=None):
     if docstring is not None:
@@ -45,6 +47,13 @@ def get_default_value(field):
     if callable(default_value):
         default_value = default_value()
     return default_value
+
+
+def display_methods(methods):
+    if 'display_methods' in SWAGGER_SETTINGS:
+        return filter(lambda m: m.lower() in SWAGGER_SETTINGS['display_methods'], methods)
+    else:
+        return methods
 
 
 class IntrospectorHelper(object):
@@ -507,7 +516,7 @@ class APIViewIntrospector(BaseViewIntrospector):
             yield APIViewMethodIntrospector(self, method)
 
     def methods(self):
-        return self.callback().allowed_methods
+        return display_methods(self.callback().allowed_methods)
 
 
 class WrappedAPIViewIntrospector(BaseViewIntrospector):
@@ -516,7 +525,7 @@ class WrappedAPIViewIntrospector(BaseViewIntrospector):
             yield WrappedAPIViewMethodIntrospector(self, method)
 
     def methods(self):
-        return self.callback().allowed_methods
+        return display_methods(self.callback().allowed_methods)
 
     def get_notes(self):
         class_docs = get_view_description(self.callback)
@@ -578,7 +587,7 @@ class ViewSetIntrospector(BaseViewIntrospector):
         self.patterns = patterns or [pattern]
 
     def __iter__(self):
-        methods = self._resolve_methods()
+        methods = display_methods(self._resolve_methods())
         for method in methods:
             yield ViewSetMethodIntrospector(self, methods[method], method)
 
@@ -587,7 +596,7 @@ class ViewSetIntrospector(BaseViewIntrospector):
         for pattern in self.patterns:
             if pattern.callback:
                 stuff.extend(self._resolve_methods(pattern).values())
-        return stuff
+        return display_methods(stuff)
 
     def _resolve_methods(self, pattern=None):
         from .decorators import closure_n_code, get_closure_var
