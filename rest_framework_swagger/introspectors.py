@@ -51,9 +51,8 @@ def get_default_value(field):
 
 def display_methods(methods):
     if 'display_methods' in SWAGGER_SETTINGS:
-        return filter(lambda m: m.lower() in SWAGGER_SETTINGS['display_methods'], methods)
-    else:
-        return methods
+        methods = filter(lambda m: m.lower() in SWAGGER_SETTINGS['display_methods'] or m == 'OPTIONS', methods)
+    return methods
 
 
 class IntrospectorHelper(object):
@@ -587,8 +586,8 @@ class ViewSetIntrospector(BaseViewIntrospector):
         self.patterns = patterns or [pattern]
 
     def __iter__(self):
-        methods = display_methods(self._resolve_methods())
-        for method in methods:
+        methods = self._resolve_methods()
+        for method in display_methods(methods.keys()):
             yield ViewSetMethodIntrospector(self, methods[method], method)
 
     def methods(self):
@@ -596,7 +595,7 @@ class ViewSetIntrospector(BaseViewIntrospector):
         for pattern in self.patterns:
             if pattern.callback:
                 stuff.extend(self._resolve_methods(pattern).values())
-        return display_methods(stuff)
+        return stuff
 
     def _resolve_methods(self, pattern=None):
         from .decorators import closure_n_code, get_closure_var
